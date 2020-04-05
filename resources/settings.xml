@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <setting id="enter_all_videos" type="bool" label="32007" default="false" />
+    <setting id="items_per_page" type="slider" label="32006" default="25" range="0,50" />
+    <setting id="channel_id" type="text" default="UCDBjzWyYeU1CtdFqNlQot_g" visible="false"/>
+    <setting id="tvshow_title" type="text" default="毛記電視" visible="false"/>
+</settings>

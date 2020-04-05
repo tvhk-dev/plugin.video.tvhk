@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.tvhkAPI-tvmost" name="Kodi Addon - TVHK(API mode) Channel: TVMost" version="0.0.3" provider-name="TVHK">
+    <requires>
+        <import addon="xbmc.python" version="2.25.0"/>
+        <import addon="script.module.routing" version="0.2.0"/>
+        <import addon="script.module.requests" version="2.12.4"/>
+        <import addon="script.module.youtube.dl" version="19.912.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Addon for TVMost Channels from Youtube</summary>
+        <summary lang="zh-HK">毛記電視於2015年5月18號正式啟播，成為香港第一間無牌……呀唔係……係毛牌電視台，每日全天候Online 36小時為全港超過689萬廢青人口提供最優質的膠清網上電視服務。</summary>
+        <description lang="zh">面向廣大無情網民，毛記電視不惜工本，斥資近四位數字，每日攝製超過1,200秒毛聊新聞、資訊、綜藝及戲劇節目，由於製作精良，內容充實，未開台已獲社會大眾廣泛認同，至今已勇奪多個國際獎項，包括「亞太區我最喜愛廢青電視台」、「全球最冇良心電視台」、「2046年度十大最低欣賞指數節目」等。</description>
+        <disclaimer lang="en">All rights resvered to Channel owners. TVHK do not have any right of the channels and only presents what is available through the Internet into Kodi</disclaimer>
+        <disclaimer lang="zh_HK">版權所有：毛記電視</disclaimer>
+        <language>zh_HK</language>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <forum>https://forum.kodi.tv/showthread.php?tid=319639</forum>
+        <website>https://www.youtube.com/channel/UCiJnCs2K5gP-DXnMxlstC9A</website>
+        <email>tvhk.master@gmail.com</email>
+        <source>https://www.youtube.com/channel/UCiJnCs2K5gP-DXnMxlstC9A</source>
+        <news>v0.0.3
+        [Fix] add all metadata
+        </news>
+        <assets>
+            <icon>resources/assets/tvhk_tvmost_logo_512px.png</icon>
+            <fanart>resources/assets/fanart.jpg</fanart>
+            <banner></banner>
+            <clearlogo>resources/assets/tvhk_tvmost_logo_512px.png</clearlogo>
+            <screenshot>resources/assets/screenshot-1.png</screenshot>
+            <screenshot>resources/assets/screenshot-2.png</screenshot>
+            <screenshot>resources/assets/screenshot-3.png</screenshot>
+        </assets>
+    </extension>
+</addon>
