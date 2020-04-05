@@ -15,9 +15,9 @@ import kodiutils
 
 CHANNEL_ID = str(kodiutils.get_setting("channel_id"))
 API_ENDPOINT = str(kodiutils.get_setting("api_endpoint"))
-db = sqlite.connect(os.path.dirname(os.path.realpath(__file__)) + '/lib/new.db')
+db = sqlite.connect(os.path.dirname(os.path.realpath(__file__)) + '/db.db')
 db.row_factory = lambda c, r: dict([(col[0], r[idx]) for idx, col in enumerate(c.description)])
-f = open(os.path.dirname(os.path.realpath(__file__)) + "/init.sql", "r")
+f = open(os.path.dirname(os.path.realpath(__file__)) + "/../init.sql", "r")
 sql = f.read()
 f.close()
 
@@ -46,7 +46,7 @@ def update(updateType):
                 {
                     'id': id,
                     'channel': CHANNEL_ID,
-                    'timestamp': datetime.datetime.fromtimestamp(int(lives[id]["timestamp"])),
+                    'timestamp': datetime.datetime.fromtimestamp(int(lives[id]["timestamp"])).strftime("%Y-%m-%d %H:%M:%S"),
                     'content': json.dumps(lives[id])
                 })
 
@@ -54,15 +54,15 @@ def update(updateType):
         j = requests.get(API_ENDPOINT + '/api.php?action=uploads&channelID=' + CHANNEL_ID + '&lastUpdate=' + str(lastTimestamp), timeout=15).json()
         uploads = j["uploads"]
 
-        for id in uploads:
+        for uuid in uploads:
             db.execute(
-                "REPLACE INTO channels (`id`, `channel`, `timestamp`, `content`, `updatedAt`) VALUES (?,?,?,?,?)",
+                "REPLACE INTO channels (`uuid`, `channel`, `timestamp`, `content`, `updatedAt`) VALUES (?,?,?,?,?)",
                 (
-                    id,
+                    uuid,
                     CHANNEL_ID,
-                    str(datetime.datetime.fromtimestamp(int(uploads[id]["timestamp"]))),
-                    json.dumps(uploads[id]),
-                    str(datetime.datetime.fromtimestamp(int(uploads[id]["updatedAt"])))
+                    str(datetime.datetime.fromtimestamp(int(uploads[uuid]["timestamp"]))).strftime("%Y-%m-%d %H:%M:%S"),
+                    json.dumps(uploads[uuid]),
+                    str(datetime.datetime.fromtimestamp(int(uploads[uuid]["updatedAt"]))).strftime("%Y-%m-%d %H:%M:%S")
                 ))
 
     elif updateType == "playlists":
@@ -72,25 +72,25 @@ def update(updateType):
         for playlistID in playlists:
             for videoID in playlists[playlistID]:
                 video = playlists[playlistID][videoID]
-                if int(db.execute('select count(*) as count from playlists where id=? and playlist=?',(videoID, playlistID)).fetchone()['count']) == 0:
+                if int(db.execute('select count(*) as count from playlists where uuid=? and playlist=?',(videoID, playlistID)).fetchone()['count']) == 0:
                     db.execute(
-                        'INSERT INTO playlists (`id`, `channel`, `playlist`, `timestamp`, `content`, `updatedAt`) values (?,?,?,?,?,?);',
+                        'INSERT INTO playlists (`uuid`, `channel`, `playlist`, `timestamp`, `content`, `updatedAt`) values (?,?,?,?,?,?);',
                         (
                             videoID,
                             CHANNEL_ID,
                             playlistID,
-                            datetime.datetime.fromtimestamp(int(video["timestamp"])),
+                            datetime.datetime.fromtimestamp(int(video["timestamp"])).strftime("%Y-%m-%d %H:%M:%S"),
                             json.dumps(video),
-                            datetime.datetime.fromtimestamp(int(video["updatedAt"]))
+                            datetime.datetime.fromtimestamp(int(video["updatedAt"])).strftime("%Y-%m-%d %H:%M:%S")
                         ))
                 else:
                     db.execute(
-                        'UPDATE playlists SET `channel` = ?, `timestamp` = ?, `content` = ?, `updatedAt` = ? WHERE `id` = ?', 
+                        'UPDATE playlists SET `channel` = ?, `timestamp` = ?, `content` = ?, `updatedAt` = ? WHERE `uuid` = ?', 
                         (
                             CHANNEL_ID,
-                            datetime.datetime.fromtimestamp(int(video["timestamp"])),
+                            datetime.datetime.fromtimestamp(int(video["timestamp"])).strftime("%Y-%m-%d %H:%M:%S"),
                             json.dumps(video),
-                            datetime.datetime.fromtimestamp(int(video["updatedAt"])),
+                            datetime.datetime.fromtimestamp(int(video["updatedAt"])).strftime("%Y-%m-%d %H:%M:%S"),
                             playlistID
                         ))
     elif updateType == "config":
@@ -111,7 +111,7 @@ def getUploadVideos(page):
     result = []
     for video in uploads:
         info = json.loads(video['content'])
-        info['id'] = video['id']
+        info['id'] = video['uuid']
         result.append(info)
     return videoInfoToListItem(result)
     pass
@@ -122,7 +122,7 @@ def getPlaylistVideos(playlistID, page):
     result = []
     for video in playlist:
         info = json.loads(video['content'])
-        info['id'] = video['id']
+        info['id'] = video['uuid']
         result.append(info)
     return videoInfoToListItem(result)
     pass
@@ -145,16 +145,18 @@ def getConfig():
         return config
     
 def videoInfoToListItem(videoInfos):
+    remoteConfig = getConfig()
     for info in videoInfos:
        
         liz = ListItem(info['title'])
         infolabels = {"plot": info["description"]}
         liz.setInfo(type="video", infoLabels=infolabels)
         liz.setProperty("videoid", info['id'])
+        liz.setProperty("url", info['files'][next(iter(info['files']))])
         liz.setArt({
-            'thumb': info['thumb'],
+            'thumb': remoteConfig['peertube']['serverRoot'] + info['thumb'],
             'fanart': xbmcaddon.Addon().getAddonInfo("fanart"),
-            "poster": info['thumb']
+            "poster": remoteConfig['peertube']['serverRoot'] + info['thumb']
         })
         #liz.setProperty("type","playlist")
         video_info = {

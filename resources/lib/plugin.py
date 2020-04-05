@@ -4,12 +4,10 @@ import routing # pylint: disable=E0401
 import xbmcaddon
 import xbmcplugin
 from resources.lib import kodiutils
-from resources.lib import youtubelib
 from resources.lib import db
 from xbmcgui import ListItem
 from xbmcplugin import addDirectoryItem, endOfDirectory
 import xbmc
-import YDStreamExtractor
 
 
 ADDON = xbmcaddon.Addon()
@@ -62,16 +60,16 @@ def all_videos():
         result = db.getUploadVideos(page_num)
 
     for liz in result:
-        addDirectoryItem(plugin.handle, plugin.url_for(play, liz.getProperty("videoid")), liz, False)
+        addDirectoryItem(plugin.handle, plugin.url_for(play, liz.getProperty("url")), liz, False)
         
     kodiutils.add_sort_methods(plugin.handle)
     xbmcplugin.setContent(plugin.handle, 'episodes')
     endOfDirectory(plugin.handle)
 
 
-@plugin.route('/play/<videoid>')
-def play(videoid):
-    stream = 'plugin://plugin.video.youtube/play/?video_id=%s' % (videoid)
+@plugin.route('/play/<url>')
+def play(url):
+    stream = 'plugin://plugin.video.peertube/?action=play_video&url=%s' % (url)
     liz = ListItem()
     liz.setPath(stream)
     xbmcplugin.setResolvedUrl(plugin.handle, True, liz)

@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.tvhkAPI-tvmost" name="Kodi Addon - TVHK(API mode) Channel: TVMost" version="0.0.3" provider-name="TVHK">
+<addon id="plugin.video.tvhkAPI-tvmost" name="TVHK Channel - tvhk.promo (API mode)" version="0.0.3" provider-name="TVHK">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
         <import addon="script.module.requests" version="2.12.4"/>
-        <import addon="script.module.youtube.dl" version="19.912.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
