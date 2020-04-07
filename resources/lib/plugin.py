@@ -68,12 +68,13 @@ def all_videos():
     endOfDirectory(plugin.handle)
 
 
-@plugin.route('/play/<url>')
+@plugin.route('/play/<path:url>')
 def play(url):
     stream = 'plugin://plugin.video.peertube/?action=play_video&url=%s' % (urllib.quote(url))
     liz = ListItem()
     liz.setPath(stream)
     xbmcplugin.setResolvedUrl(plugin.handle, True, liz)
+    
 
 
 @plugin.route('/live')
