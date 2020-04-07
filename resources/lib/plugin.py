@@ -8,6 +8,7 @@ from resources.lib import db
 from xbmcgui import ListItem
 from xbmcplugin import addDirectoryItem, endOfDirectory
 import xbmc
+import urllib
 
 
 ADDON = xbmcaddon.Addon()
@@ -69,7 +70,7 @@ def all_videos():
 
 @plugin.route('/play/<url>')
 def play(url):
-    stream = 'plugin://plugin.video.peertube/?action=play_video&url=%s' % (url)
+    stream = 'plugin://plugin.video.peertube/?action=play_video&url=%s' % (urllib.quote(url))
     liz = ListItem()
     liz.setPath(stream)
     xbmcplugin.setResolvedUrl(plugin.handle, True, liz)
