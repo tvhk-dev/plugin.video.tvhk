@@ -2,6 +2,7 @@
 <settings>
     <setting id="enter_all_videos" type="bool" label="32007" default="false" />
     <setting id="items_per_page" type="slider" label="32006" default="25" range="0,50" />
-    <setting id="channel_id" type="text" default="UCDBjzWyYeU1CtdFqNlQot_g" visible="false"/>
-    <setting id="tvshow_title" type="text" default="毛記電視" visible="false"/>
+    <setting id="channel_id" type="text" default="tvhk.promo" visible="false"/>
+    <setting id="api_endpoint" type="text" default="https://api.tvhk.network/peertubeProxy" visible="false"/>
+    <setting id="tvshow_title" type="text" default="TVHK.promo" visible="false"/>
 </settings>
