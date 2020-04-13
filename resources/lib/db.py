@@ -13,7 +13,6 @@ from xbmcgui import ListItem
 import xbmcaddon
 import kodiutils
 
-CHANNEL_ID = str(kodiutils.get_setting("channel_id"))
 API_ENDPOINT = str(kodiutils.get_setting("api_endpoint"))
 db = sqlite.connect(os.path.dirname(os.path.realpath(__file__)) + '/db.db')
 db.row_factory = lambda c, r: dict([(col[0], r[idx]) for idx, col in enumerate(c.description)])
@@ -24,10 +23,7 @@ f.close()
 db.executescript(sql)
 
 try:
-    lastTimestamp = db.execute("select CAST(strftime('%s', updatedAt) as integer) from channels order by updatedAt desc limit 1").fetchone()['updatedAt']
-    lastPlaylistTimestamp = db.execute("select CAST(strftime('%s', updatedAt) as integer) from playlists order by updatedAt desc limit 1").fetchone()['updatedAt']
-    if (lastTimestamp < lastPlaylistTimestamp):
-        lastTimestamp = lastPlaylistTimestamp
+    lastTimestamp = db.execute("select CAST(strftime('%s', updatedAt) as integer) from playlists order by updatedAt desc limit 1").fetchone()['updatedAt']
 except:
     lastTimestamp = 0
 
@@ -35,6 +31,7 @@ xbmc.log('lastTimestamp:' + str(lastTimestamp), 2)
 
 def update(updateType):
     if updateType == "lives":
+        """
         j = requests.get(API_ENDPOINT + '/api.php?action=lives&channelID=' + CHANNEL_ID + '&lastUpdate=' + str(lastTimestamp), timeout=15).json()      
         lives = j["live"]
 
@@ -42,84 +39,83 @@ def update(updateType):
 
         for id in lives:
             db.execute(
-                'INSERT INTO lives (`id`, `channel`, `timestamp`, `content`) values (%(id)s,%(channel)s,%(timestamp)s,%(content)s);',
+                'INSERT INTO lives (`id`, `channelID`, `timestamp`, `content`) values (%(id)s,%(channel)s,%(timestamp)s,%(content)s);',
                 {
                     'id': id,
                     'channel': CHANNEL_ID,
                     'timestamp': datetime.datetime.fromtimestamp(int(lives[id]["timestamp"])).strftime("%Y-%m-%d %H:%M:%S"),
                     'content': json.dumps(lives[id])
                 })
+        """
 
-    elif updateType == "uploads":
-        j = requests.get(API_ENDPOINT + '/api.php?action=uploads&channelID=' + CHANNEL_ID + '&lastUpdate=' + str(lastTimestamp), timeout=15).json()
-        uploads = j["uploads"]
-
-        for uuid in uploads:
-            db.execute(
-                "REPLACE INTO channels (`uuid`, `channel`, `timestamp`, `content`, `updatedAt`) VALUES (?,?,?,?,?)",
-                (
-                    uuid,
-                    CHANNEL_ID,
-                    str(datetime.datetime.fromtimestamp(int(uploads[uuid]["timestamp"]))).strftime("%Y-%m-%d %H:%M:%S"),
-                    json.dumps(uploads[uuid]),
-                    str(datetime.datetime.fromtimestamp(int(uploads[uuid]["updatedAt"]))).strftime("%Y-%m-%d %H:%M:%S")
-                ))
-
-    elif updateType == "playlists":
-        j = requests.get(API_ENDPOINT + '/api.php?action=playlists&channelID=' + CHANNEL_ID + '&lastUpdate=' + str(lastTimestamp), timeout=15).json()
-        playlists = j["playlists"]
-
-        for playlistID in playlists:
-            for videoID in playlists[playlistID]:
-                video = playlists[playlistID][videoID]
-                if int(db.execute('select count(*) as count from playlists where uuid=? and playlist=?',(videoID, playlistID)).fetchone()['count']) == 0:
-                    db.execute(
-                        'INSERT INTO playlists (`uuid`, `channel`, `playlist`, `timestamp`, `content`, `updatedAt`) values (?,?,?,?,?,?);',
-                        (
-                            videoID,
-                            CHANNEL_ID,
-                            playlistID,
-                            datetime.datetime.fromtimestamp(int(video["timestamp"])).strftime("%Y-%m-%d %H:%M:%S"),
-                            json.dumps(video),
-                            datetime.datetime.fromtimestamp(int(video["updatedAt"])).strftime("%Y-%m-%d %H:%M:%S")
-                        ))
-                else:
-                    db.execute(
-                        'UPDATE playlists SET `channel` = ?, `timestamp` = ?, `content` = ?, `updatedAt` = ? WHERE `uuid` = ?', 
-                        (
-                            CHANNEL_ID,
-                            datetime.datetime.fromtimestamp(int(video["timestamp"])).strftime("%Y-%m-%d %H:%M:%S"),
-                            json.dumps(video),
-                            datetime.datetime.fromtimestamp(int(video["updatedAt"])).strftime("%Y-%m-%d %H:%M:%S"),
-                            playlistID
-                        ))
-    elif updateType == "config":
-        j = requests.get(API_ENDPOINT + '/api.php?action=config&channelID=' + CHANNEL_ID, timeout=15).json()
+    elif updateType == "channels":
+        j = requests.get(API_ENDPOINT + '/api.php?action=channels&lastUpdate=' + str(lastTimestamp), timeout=15).json()
+        
         config = j["config"]
         if db.execute('select id from config').fetchone() == None:
             db.execute('INSERT INTO config (`config`) values (?);',[json.dumps(config)])
         else:
             db.execute('UPDATE config SET `config` = ? WHERE `id` = ?', [json.dumps(config), db.execute('select id from config').fetchone()["id"]])
 
+        channels = j["channels"]
+        for channelID in channels:
+            channel = channels[channelID]
+            playlists = channel["playlists"]
+            
+            for playlistID in playlists:
+                for videoID in playlists[playlistID]:
+                    video = playlists[playlistID][videoID]
+                    if int(db.execute('select count(*) as count from playlists where uuid=? and playlistID=?',(videoID, playlistID)).fetchone()['count']) == 0:
+                        db.execute(
+                            'INSERT INTO playlists (`uuid`, `channelID`, `playlistID`, `timestamp`, `content`, `updatedAt`) values (?,?,?,?,?,?);',
+                            (
+                                videoID,
+                                channelID,
+                                playlistID,
+                                datetime.datetime.fromtimestamp(int(video["timestamp"])).strftime("%Y-%m-%d %H:%M:%S"),
+                                json.dumps(video),
+                                datetime.datetime.fromtimestamp(int(video["updatedAt"])).strftime("%Y-%m-%d %H:%M:%S")
+                            ))
+                    else:
+                        db.execute(
+                            'UPDATE playlists SET `channelID` = ?, `timestamp` = ?, `content` = ?, `updatedAt` = ? WHERE `uuid` = ?', 
+                            (
+                                channelID,
+                                datetime.datetime.fromtimestamp(int(video["timestamp"])).strftime("%Y-%m-%d %H:%M:%S"),
+                                json.dumps(video),
+                                datetime.datetime.fromtimestamp(int(video["updatedAt"])).strftime("%Y-%m-%d %H:%M:%S"),
+                                playlistID
+                            ))
+            config = channel["config"]
+            if db.execute('select channelID from channels where channelID = ?', [channelID]).fetchone() == None:
+                db.execute('INSERT INTO channels (`channelID`, `config`, `updatedAt`) values (?,?,?);',[channelID, json.dumps(config), datetime.datetime.fromtimestamp(int(j["updatedAt"])).strftime("%Y-%m-%d %H:%M:%S")])
+            else:
+                db.execute('UPDATE channels SET `config` = ?, `updatedAt` = ? WHERE `channelID` = ?', [json.dumps(config), datetime.datetime.fromtimestamp(int(j["updatedAt"])).strftime("%Y-%m-%d %H:%M:%S"), channelID])
+
     db.commit()
 
-def getUploadVideos(page):
-    update("uploads")
-    #itemPerPage = 10
-    #page -= 1
-    uploads = db.execute('select * from channels order by `updatedAt` desc').fetchall()
-    result = []
-    for video in uploads:
-        info = json.loads(video['content'])
-        info['id'] = video['uuid']
-        result.append(info)
+def getChannels():
+    update("channels")
+    remoteConfig = getConfig()
+    query = db.execute('select config, channelID from channels').fetchall()
+    channels = {}
+    if (query != None):
+        for row in query:
+            channels[row["channelID"]] = json.loads(row["config"])
+            channels[row["channelID"]]["bg"] = remoteConfig['peertube']['serverRoot'] + channels[row["channelID"]]["thumb"] #makeshift temply
+            channels[row["channelID"]]["thumb"] = remoteConfig['peertube']['serverRoot'] + channels[row["channelID"]]["thumb"]
+        return channels
 
-    return videoInfoToListItem(result)
-    pass
+def getConfig():
+    update("channels")
+    query = db.execute('select config from config').fetchone()
+    if (query != None):
+        config = json.loads(query["config"])
+        return config
 
 def getPlaylistVideos(playlistID, raw=False):
-    update("playlists")
-    playlist = db.execute('select * from playlists where playlist = ? order by `updatedAt` desc', [playlistID]).fetchall()
+    update("channels")
+    playlist = db.execute('select * from playlists where playlistID = ? order by `updatedAt` desc', [playlistID]).fetchall()
     result = []
     for video in playlist:
         info = json.loads(video['content'])
@@ -132,22 +128,16 @@ def getPlaylistVideos(playlistID, raw=False):
         return videoInfoToListItem(result)
     pass
 
-def getLives():
+def getLives(channelID):
     update("lives")
-    lives = db.execute('select * from lives order by `timestamp` desc').fetchall()
+    lives = db.execute('select * from lives where channelID = ? order by `timestamp` desc', [channelID]).fetchall()
     result = []
     for video in lives:
         info = json.loads(video['content'])
         info['id'] = video['id']
         result.append(info)
     return videoInfoToListItem(result)
-
-def getConfig():
-    update("config")
-    query = db.execute('select config from config').fetchone()
-    if (query != None):
-        config = json.loads(query["config"])
-        return config
+    
     
 def videoInfoToListItem(videoInfos):
     remoteConfig = getConfig()

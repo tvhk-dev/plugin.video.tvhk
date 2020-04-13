@@ -17,18 +17,35 @@ ADDON_NAME = ADDON.getAddonInfo("name")
 ICON = ADDON.getAddonInfo("icon")
 FANART = ADDON.getAddonInfo("fanart")
 plugin = routing.Plugin()
+_channels = db.getChannels()
 
 @plugin.route('/')
 def index():
-    remoteConfig = db.getConfig()
+    for channelID in _channels:
+        channelConfig = _channels[channelID]
+        liz = ListItem(channelConfig["title"])
+        infolabels = {"plot": channelConfig["description"]}
+        liz.setInfo(type="video", infoLabels=infolabels)
+        liz.setArt({"thumb": channelConfig["thumb"], "fanart": channelConfig["bg"]})
+        addDirectoryItem(plugin.handle, plugin.url_for(channel, channelID=channelID), liz, True)
+        
+    xbmcplugin.setContent(plugin.handle, 'tvshows')
+    endOfDirectory(plugin.handle)        
+    pass
+
+@plugin.route('/channel')
+def channel():
+    channelID = plugin.args["channelID"][0] if "channelID" in plugin.args.keys() else ""
+    channelConfig = _channels[channelID]
+    
     # Playlists
-    for playlistID in remoteConfig['playlists']:
-        liz = ListItem(remoteConfig['playlists'][playlistID]["title"])
-        infolabels = {"plot": remoteConfig['playlists'][playlistID]["description"]}
+    for playlistID in channelConfig['playlists']:
+        liz = ListItem(channelConfig['playlists'][playlistID]["title"])
+        infolabels = {"plot": channelConfig['playlists'][playlistID]["description"]}
         liz.setInfo(type="video", infoLabels=infolabels)
         
-        liz.setArt({"thumb": remoteConfig['playlists'][playlistID]["thumb"], "fanart": xbmcaddon.Addon().getAddonInfo("fanart")})
-        if (True if len(remoteConfig['playlists']) == 1 else False):
+        liz.setArt({"thumb": channelConfig['playlists'][playlistID]["thumb"], "fanart": xbmcaddon.Addon().getAddonInfo("fanart")})
+        if (True if len(channelConfig['playlists']) == 1 else False):
             liz.setProperty('IsPlayable', 'true')
             addDirectoryItem(plugin.handle, plugin.url_for(play_playlist, playlistID=playlistID), liz, False)
         else:
@@ -36,13 +53,11 @@ def index():
             
     xbmcplugin.setContent(plugin.handle, 'tvshows')
     endOfDirectory(plugin.handle)
-    xbmc.log("getting here,end~,"+str(plugin.handle), 2)
 
 
 @plugin.route('/videos')
 def all_videos():
-    page_num = int(plugin.args["page"][0]) if "page" in plugin.args.keys() else 1
-    autoplay = plugin.args["autoplay"][0] if "autoplay" in plugin.args.keys() else False
+    #page_num = int(plugin.args["page"][0]) if "page" in plugin.args.keys() else 1
     playlistID = plugin.args["playlistID"][0] if "playlistID" in plugin.args.keys() else ""
 
     if "playlistID" in plugin.args.keys() and plugin.args["playlistID"][0] != "all":
@@ -52,7 +67,8 @@ def all_videos():
         addDirectoryItem(plugin.handle, plugin.url_for(play_playlist, playlistID=playlistID), liz, False)
         result = db.getPlaylistVideos(playlistID) #,page_num
     else:
-        result = db.getUploadVideos(page_num)
+        #result = db.getUploadVideos(page_num)
+        pass
 
     for liz in result:
         addDirectoryItem(plugin.handle, plugin.url_for(play, liz.getProperty("url")), liz, False)
@@ -64,7 +80,6 @@ def all_videos():
 
 @plugin.route('/play_playlist')
 def play_playlist(playlistID = ""):
-    xbmc.log("getting here,playlist()", 2)
     playlistID = plugin.args["playlistID"][0] if "playlistID" in plugin.args.keys() else playlistID
     videos = db.getPlaylistVideos(playlistID, raw=True)
     urls = []
