@@ -61,10 +61,11 @@ def update(updateType):
         for channelID in channels:
             channel = channels[channelID]
             playlists = channel["playlists"]
-            
+            playlistConfigs = {}
             for playlistID in playlists:
-                for videoID in playlists[playlistID]:
-                    video = playlists[playlistID][videoID]
+                playlistConfigs[playlistID] = playlists[playlistID]["config"]
+                for videoID in playlists[playlistID]["videos"]:
+                    video = playlists[playlistID]["videos"][videoID]
                     if int(db.execute('select count(*) as count from playlists where uuid=? and playlistID=?',(videoID, playlistID)).fetchone()['count']) == 0:
                         db.execute(
                             'INSERT INTO playlists (`uuid`, `channelID`, `playlistID`, `timestamp`, `content`, `updatedAt`) values (?,?,?,?,?,?);',
@@ -87,6 +88,7 @@ def update(updateType):
                                 playlistID
                             ))
             config = channel["config"]
+            config["playlists"] = playlistConfigs
             if db.execute('select channelID from channels where channelID = ?', [channelID]).fetchone() == None:
                 db.execute('INSERT INTO channels (`channelID`, `config`, `updatedAt`) values (?,?,?);',[channelID, json.dumps(config), datetime.datetime.fromtimestamp(int(j["updatedAt"])).strftime("%Y-%m-%d %H:%M:%S")])
             else:
@@ -102,8 +104,14 @@ def getChannels():
     if (query != None):
         for row in query:
             channels[row["channelID"]] = json.loads(row["config"])
-            channels[row["channelID"]]["bg"] = remoteConfig['peertube']['serverRoot'] + channels[row["channelID"]]["thumb"] #makeshift temply
-            channels[row["channelID"]]["thumb"] = remoteConfig['peertube']['serverRoot'] + channels[row["channelID"]]["thumb"]
+            metadata = channels[row["channelID"]]["metadata"]
+            metadata["bg"] = remoteConfig['peertube']['serverRoot'] + metadata["thumb"] #makeshift temply
+            metadata["thumb"] = remoteConfig['peertube']['serverRoot'] + metadata["thumb"]
+            for playlistID in channels[row["channelID"]]["playlists"]:
+                playlist = channels[row["channelID"]]["playlists"][playlistID]
+                playlist["metadata"]["bg"] = remoteConfig['peertube']['serverRoot'] + playlist["metadata"]["thumb"] #makeshift temply
+                playlist["metadata"]["thumb"] = remoteConfig['peertube']['serverRoot'] + playlist["metadata"]["thumb"] #makeshift temply
+                
         return channels
 
 def getConfig():
@@ -121,7 +129,7 @@ def getPlaylistVideos(playlistID, raw=False):
         info = json.loads(video['content'])
         info['id'] = video['uuid']
         result.append(info)
-    
+        xbmc.log(str(info['thumb']), 2)
     if (raw):
         return result
     else:
@@ -150,7 +158,7 @@ def videoInfoToListItem(videoInfos):
         liz.setProperty("url", info['files'][next(iter(info['files']))])
         liz.setArt({
             'thumb': remoteConfig['peertube']['serverRoot'] + info['thumb'],
-            'fanart': xbmcaddon.Addon().getAddonInfo("fanart"),
+            'fanart': remoteConfig['peertube']['serverRoot'] + info['thumb'],
             "poster": remoteConfig['peertube']['serverRoot'] + info['thumb']
         })
         #liz.setProperty("type","playlist")
