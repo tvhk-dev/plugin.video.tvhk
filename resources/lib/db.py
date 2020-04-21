@@ -129,7 +129,6 @@ def getPlaylistVideos(playlistID, raw=False):
         info = json.loads(video['content'])
         info['id'] = video['uuid']
         result.append(info)
-        xbmc.log(str(info['thumb']), 2)
     if (raw):
         return result
     else:
@@ -151,15 +150,16 @@ def videoInfoToListItem(videoInfos):
     remoteConfig = getConfig()
     for info in videoInfos:
        
-        liz = ListItem(info['title'])
+        liz = ListItem(label=info['title'])
         infolabels = {"plot": info["description"]}
         liz.setInfo(type="video", infoLabels=infolabels)
         liz.setProperty("videoid", info['id'])
         liz.setProperty("url", info['files'][next(iter(info['files']))])
+        liz.setProperty('IsPlayable', 'true')
         liz.setArt({
             'thumb': remoteConfig['peertube']['serverRoot'] + info['thumb'],
             'fanart': remoteConfig['peertube']['serverRoot'] + info['thumb'],
-            "poster": remoteConfig['peertube']['serverRoot'] + info['thumb']
+            #"poster": remoteConfig['peertube']['serverRoot'] + info['thumb']
         })
         #liz.setProperty("type","playlist")
         video_info = {
@@ -171,8 +171,8 @@ def videoInfoToListItem(videoInfos):
         liz.addStreamInfo('video', video_info)
         audio_info = {'codec': 'aac', 'language': 'zh-hk', 'channels': 2}
         liz.addStreamInfo('audio', audio_info)
-        liz.setProperty('IsPlayable', 'true')
-        cm = []
-        cm.append(("Info", 'XBMC.Action(Info)'))
-        liz.addContextMenuItems(cm, replaceItems=False)
+        #liz.setProperty('IsPlayable', 'true')
+        #cm = []
+        #cm.append(("Info", 'XBMC.Action(Info)'))
+        #liz.addContextMenuItems(cm, replaceItems=False)
         yield liz

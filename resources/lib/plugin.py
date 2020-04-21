@@ -13,15 +13,13 @@
     502    EpisodeList         movies, sets, tvshows, episodes, videos, artists
 """
 import routing # pylint: disable=E0401
-import xbmcaddon
-import xbmcplugin
+import xbmc, xbmcaddon, xbmcplugin, xbmcgui
 from resources.lib import kodiutils
 from resources.lib import db
 from xbmcgui import ListItem
 from xbmcplugin import addDirectoryItem, endOfDirectory
-import xbmc
 import urllib
-import json, sys
+import json, sys, random
 
 ADDON = xbmcaddon.Addon()
 ADDON_NAME = ADDON.getAddonInfo("name")
@@ -30,33 +28,33 @@ plugin = routing.Plugin()
 _channels = db.getChannels()
 
 def list_channels(channels):
+    xbmcgui.Window(10138).setProperty('isShowAD', "false")
     for channelID in channels:
         channelConfig = _channels[channelID]
         liz = ListItem(channelConfig["metadata"]["title"])
         liz.setInfo(type="video", infoLabels={"plot": channelConfig["metadata"]["description"]})
         liz.setArt({"thumb": channelConfig["metadata"]["thumb"], "fanart": channelConfig["metadata"]["bg"]})
+        liz.setProperty('IsPlayable', 'true')
         addDirectoryItem(plugin.handle, plugin.url_for(channel, channelID=channelID), liz, True)
-        
-    pass
 
 def list_playlist(channelID):
+    xbmcgui.Window(10138).setProperty('isShowAD', "false")
     playlists = _channels[channelID]['playlists']
     for playlistID in playlists:
         metadata = playlists[playlistID]["metadata"]
-        liz = ListItem(metadata["title"])
-        infolabels = {"plot": metadata["description"]}
+        liz = ListItem(label=metadata["title"])
+        infolabels = {"plot": metadata["description"], "Genre":"Genre Here"}
         liz.setInfo(type="video", infoLabels=infolabels)
-        
         liz.setArt({"thumb": metadata["thumb"], "fanart": metadata["thumb"]})
         if (True if len(playlists) == 1 else False):
             liz.setProperty('IsPlayable', 'true')
-            #addDirectoryItem(plugin.handle, plugin.url_for(play_playlist, playlistID=playlistID), liz, False)
             url = urllib.quote("magnet:?xs=https%3A%2F%2Ftvhk.network%2Fstatic%2Ftorrents%2F5a23cf0a-e278-43da-98db-40ebc50c0040-1080.torrent&xt=urn:btih:dee917cd065b4d71aa5e1f02c9db9c54728c4be1&dn=Yellow+Promo+-+TEAHUB&tr=wss%3A%2F%2Ftvhk.network%3A443%2Ftracker%2Fsocket&tr=https%3A%2F%2Ftvhk.network%2Ftracker%2Fannounce&ws=https%3A%2F%2Ftvhk.network%2Fstatic%2Fwebseed%2F5a23cf0a-e278-43da-98db-40ebc50c0040-1080.mp4", safe='~()*!.\'')
             addDirectoryItem(plugin.handle, plugin.url_for(play, url), liz, False)
         else:
             addDirectoryItem(plugin.handle, plugin.url_for(all_videos, playlistID=playlistID), liz, True)
 
 def list_videos(playlistID, isRandomSequence=False):
+    xbmcgui.Window(10138).setProperty('isShowAD', "false")
     result = db.getPlaylistVideos(playlistID)
     for liz in result:
         addDirectoryItem(plugin.handle, plugin.url_for(play, liz.getProperty("url")), liz, False)
@@ -104,11 +102,22 @@ def index(category):
 
 @plugin.route('/channel')
 def channel():
+    #xbmc.executebuiltin("ActiveWindow(10138)")
+    
+    #xbmcplugin.setProperty(plugin.handle, 'FolderName', 'Test')
+    #xbmcplugin.setProperty(plugin.handle, 'Container(0).FolderName', 'Test')
+    #xbmc.executebuiltin("reloadskin()")
+    xbmc.executebuiltin("Skin.SetString(Container.FolderName,'Test')")
     channelID = plugin.args["channelID"][0] if "channelID" in plugin.args.keys() else ""
     list_playlist(channelID)
-    xbmcplugin.setContent(plugin.handle, 'sets')
+    xbmcplugin.setContent(plugin.handle, 'videos')
     xbmc.executebuiltin("Container.SetViewMode(56)")
     endOfDirectory(plugin.handle)
+    
+    
+    
+    #xbmc.setInfoLabel('Container.FolderName', "Test")
+    #xbmcgui.Dialog().ok("Debug Message", xbmcplugin.getSetting(plugin.handle, 'FolderName'))
 
 
 @plugin.route('/videos')
@@ -142,7 +151,11 @@ def play_playlist(playlistID = ""):
 
 @plugin.route('/play/<path:url>')
 def play(url):    
-    stream = 'plugin://plugin.video.peertube/?action=play_video&url=%s' % url
+    r = str(random.randint(100000, 999999))
+    xbmcgui.Window(10138).setProperty('adsID', r)
+    xbmcgui.Window(10138).setProperty('isShowAD', "true")
+    stream = 'plugin://plugin.video.peertube/?action=play_video&url=%s' % (urllib.quote(url, '~()*!.\''))
+    xbmc.log(stream, 3)
     liz = ListItem()
     liz.setPath(stream)
     xbmcplugin.setResolvedUrl(plugin.handle, True, liz)
