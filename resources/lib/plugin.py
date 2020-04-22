@@ -42,31 +42,24 @@ def list_playlist(channelID):
     playlists = _channels[channelID]['playlists']
     for playlistID in playlists:
         metadata = playlists[playlistID]["metadata"]
+        xbmc.log(str(metadata), 2)
         liz = ListItem(label=metadata["title"])
         infolabels = {"plot": metadata["description"], "Genre":"Genre Here"}
         liz.setInfo(type="video", infoLabels=infolabels)
         liz.setArt({"thumb": metadata["thumb"], "fanart": metadata["thumb"]})
-        if (True if len(playlists) == 1 else False):
-            liz.setProperty('IsPlayable', 'true')
-            url = urllib.quote("magnet:?xs=https%3A%2F%2Ftvhk.network%2Fstatic%2Ftorrents%2F5a23cf0a-e278-43da-98db-40ebc50c0040-1080.torrent&xt=urn:btih:dee917cd065b4d71aa5e1f02c9db9c54728c4be1&dn=Yellow+Promo+-+TEAHUB&tr=wss%3A%2F%2Ftvhk.network%3A443%2Ftracker%2Fsocket&tr=https%3A%2F%2Ftvhk.network%2Ftracker%2Fannounce&ws=https%3A%2F%2Ftvhk.network%2Fstatic%2Fwebseed%2F5a23cf0a-e278-43da-98db-40ebc50c0040-1080.mp4", safe='~()*!.\'')
-            addDirectoryItem(plugin.handle, plugin.url_for(play, url), liz, False)
-        else:
-            addDirectoryItem(plugin.handle, plugin.url_for(all_videos, playlistID=playlistID), liz, True)
+        addDirectoryItem(plugin.handle, plugin.url_for(all_videos, playlistID=playlistID), liz, True)    
 
 def list_videos(playlistID, isRandomSequence=False):
     xbmcgui.Window(10138).setProperty('isShowAD', "false")
     result = db.getPlaylistVideos(playlistID)
+    if isRandomSequence: random.shuffle(result)
     for liz in result:
         addDirectoryItem(plugin.handle, plugin.url_for(play, liz.getProperty("url")), liz, False)
-
+    
 @plugin.route('/')
 def categories():
-    addDirectoryItem(plugin.handle, plugin.url_for(index, 0), ListItem("0"), True)
-    addDirectoryItem(plugin.handle, plugin.url_for(index, 1), ListItem("1"), True)
-    addDirectoryItem(plugin.handle, plugin.url_for(index, 2), ListItem("2"), True)
-    addDirectoryItem(plugin.handle, plugin.url_for(index, 3), ListItem("3"), True)
-    addDirectoryItem(plugin.handle, plugin.url_for(index, 4), ListItem("4"), True)
-    addDirectoryItem(plugin.handle, plugin.url_for(index, 5), ListItem("5"), True)
+    for i in range(0,10):
+        addDirectoryItem(plugin.handle, plugin.url_for(index, i), ListItem(str(i)), True)
     xbmcplugin.setContent(plugin.handle, 'sets')
     xbmc.executebuiltin("Container.SetViewMode(52)")
     endOfDirectory(plugin.handle)
@@ -103,7 +96,6 @@ def index(category):
 @plugin.route('/channel')
 def channel():
     #xbmc.executebuiltin("ActiveWindow(10138)")
-    
     #xbmcplugin.setProperty(plugin.handle, 'FolderName', 'Test')
     #xbmcplugin.setProperty(plugin.handle, 'Container(0).FolderName', 'Test')
     #xbmc.executebuiltin("reloadskin()")
@@ -114,21 +106,18 @@ def channel():
     xbmc.executebuiltin("Container.SetViewMode(56)")
     endOfDirectory(plugin.handle)
     
-    
-    
-    #xbmc.setInfoLabel('Container.FolderName', "Test")
-    #xbmcgui.Dialog().ok("Debug Message", xbmcplugin.getSetting(plugin.handle, 'FolderName'))
-
-
 @plugin.route('/videos')
 def all_videos():
-    #page_num = int(plugin.args["page"][0]) if "page" in plugin.args.keys() else 1
     playlistID = plugin.args["playlistID"][0] if "playlistID" in plugin.args.keys() else ""
+
+    liz = ListItem(label="Play All")
+    liz.setInfo(type="video", infoLabels={"plot": "", "Genre":""})
+    liz.setProperty('IsPlayable', 'true')
+    addDirectoryItem(plugin.handle, plugin.url_for(play_playlist, playlistID=playlistID), liz, False)
     list_videos(playlistID)
     xbmcplugin.setContent(plugin.handle, 'episodes')
     xbmc.executebuiltin("Container.SetViewMode(502)")
     endOfDirectory(plugin.handle)
-
 
 @plugin.route('/play_playlist')
 def play_playlist(playlistID = ""):
@@ -144,7 +133,6 @@ def play_playlist(playlistID = ""):
     liz.setProperty('IsPlayable', 'true') 
     #Send to peertube player plugin
     xbmcplugin.setResolvedUrl(plugin.handle, True, liz)
-
     #Back from peertube, videos already in queue, let's rock!
     xbmc.Player().play(xbmc.PlayList(1))
     #xbmc.executebuiltin('playlist.playoffset(video,0)')
@@ -180,6 +168,8 @@ def live():
         endOfDirectory(plugin.handle)
         
 def run():
+    xbmc.log("plugin.video.tvhkAPI involved", 1)
+    xbmc.log("sys.argv = " + str(sys.argv), 1)
     if not kodiutils.get_setting_as_bool("enter_all_videos"):
         plugin.run()
     else:

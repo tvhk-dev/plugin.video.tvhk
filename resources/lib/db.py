@@ -148,6 +148,7 @@ def getLives(channelID):
     
 def videoInfoToListItem(videoInfos):
     remoteConfig = getConfig()
+    result = []
     for info in videoInfos:
        
         liz = ListItem(label=info['title'])
@@ -171,8 +172,9 @@ def videoInfoToListItem(videoInfos):
         liz.addStreamInfo('video', video_info)
         audio_info = {'codec': 'aac', 'language': 'zh-hk', 'channels': 2}
         liz.addStreamInfo('audio', audio_info)
+        result.append(liz)
         #liz.setProperty('IsPlayable', 'true')
         #cm = []
         #cm.append(("Info", 'XBMC.Action(Info)'))
         #liz.addContextMenuItems(cm, replaceItems=False)
-        yield liz
+    return result
