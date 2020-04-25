@@ -2,5 +2,5 @@
 <settings>
     <setting id="enter_all_videos" type="bool" label="32007" default="false" />
     <setting id="items_per_page" type="slider" label="32006" default="25" range="0,50" />
-    <setting id="api_endpoint" type="text" default="http://peertubeProxy.dev" visible="false"/>
+    <setting id="api_endpoint" type="text" default="https://api.tvhk.network/peertubeProxy-dev" visible="false"/>
 </settings>
