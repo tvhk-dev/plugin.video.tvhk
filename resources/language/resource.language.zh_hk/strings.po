@@ -1,6 +1,6 @@
 # Kodi Media Center language file
 # Addon Name: TVHK
-# Addon id: plugin.video.tvhkAPI
+# Addon id: plugin.video.tvhk
 # Addon Provider: tvhk
 msgid ""
 msgstr ""
