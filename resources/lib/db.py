@@ -98,19 +98,18 @@ def update(updateType):
 
 def getChannels():
     update("channels")
-    remoteConfig = getConfig()
     query = db.execute('select config, channelID from channels').fetchall()
     channels = {}
     if (query != None):
         for row in query:
             channels[row["channelID"]] = json.loads(row["config"])
             metadata = channels[row["channelID"]]["metadata"]
-            metadata["bg"] = remoteConfig['peertube']['serverRoot'] + metadata["thumb"] #makeshift temply
-            metadata["thumb"] = remoteConfig['peertube']['serverRoot'] + metadata["thumb"]
+            metadata["bg"] = constructResourceURL(metadata["thumb"]) #makeshift temply
+            metadata["thumb"] = constructResourceURL(metadata["thumb"])
             for playlistID in channels[row["channelID"]]["playlists"]:
                 playlist = channels[row["channelID"]]["playlists"][playlistID]
-                playlist["metadata"]["bg"] = remoteConfig['peertube']['serverRoot'] + playlist["metadata"]["thumb"] #makeshift temply
-                playlist["metadata"]["thumb"] = remoteConfig['peertube']['serverRoot'] + playlist["metadata"]["thumb"] #makeshift temply
+                playlist["metadata"]["bg"] = constructResourceURL(playlist["metadata"]["thumb"]) #makeshift temply
+                playlist["metadata"]["thumb"] = constructResourceURL(playlist["metadata"]["thumb"]) #makeshift temply
                 
         return channels
 
@@ -147,7 +146,6 @@ def getLives(channelID):
     
     
 def videoInfoToListItem(videoInfos):
-    remoteConfig = getConfig()
     result = []
     for info in videoInfos:
        
@@ -158,8 +156,8 @@ def videoInfoToListItem(videoInfos):
         liz.setProperty("url", info['files'][next(iter(info['files']))])
         liz.setProperty('IsPlayable', 'true')
         liz.setArt({
-            'thumb': remoteConfig['peertube']['serverRoot'] + info['thumb'],
-            'fanart': remoteConfig['peertube']['serverRoot'] + info['thumb'],
+            'thumb': constructResourceURL(info['thumb']),
+            'fanart': constructResourceURL(info['thumb']),
             #"poster": remoteConfig['peertube']['serverRoot'] + info['thumb']
         })
         #liz.setProperty("type","playlist")
@@ -178,3 +176,9 @@ def videoInfoToListItem(videoInfos):
         #cm.append(("Info", 'XBMC.Action(Info)'))
         #liz.addContextMenuItems(cm, replaceItems=False)
     return result
+
+
+def constructResourceURL(url):
+    return remoteConfig['peertube']['serverRoot'] + url if str(url).startswith("/") else url
+
+remoteConfig = getConfig()
